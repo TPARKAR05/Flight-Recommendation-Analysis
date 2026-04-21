@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Airline Sentiment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { font-family: 'Instrument Sans', sans-serif; background: #f5f2ed; color: #1a1a18; min-height: 100vh; }
+
+    .wrap { max-width: 900px; margin: 0 auto; padding: 64px 24px 100px; }
+
+    /* ── Nav ── */
+    .nav { display: flex; gap: 8px; margin-bottom: 52px; animation: up 0.4s ease both; }
+    .nav a {
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+      padding: 7px 16px; border-radius: 6px; text-decoration: none;
+      color: #8a8070; border: 1.5px solid #e0d9d0; transition: all 0.15s;
+    }
+    .nav a:hover { border-color: #c8bfb0; color: #1a1a18; }
+    .nav a.active { background: #1a1a18; color: #f5f2ed; border-color: #1a1a18; }
+
+    /* ── Header ── */
+    header { margin-bottom: 48px; animation: up 0.5s ease both; }
+    h1 { font-family: 'Instrument Serif', serif; font-size: 2.6rem; font-weight: 400; line-height: 1.1; letter-spacing: -0.5px; }
+    h1 em { font-style: italic; color: #7c6a52; }
+    .sub { margin-top: 8px; font-size: 0.85rem; color: #8a8070; }
+
+    /* ── Search ── */
+    .search-bar { display: flex; gap: 10px; margin-bottom: 52px; animation: up 0.5s 0.08s ease both; }
+    .search-bar input {
+      flex: 1; font-family: 'Instrument Sans', sans-serif; font-size: 0.93rem;
+      color: #1a1a18; background: #fff; border: 1.5px solid #e0d9d0;
+      border-radius: 8px; padding: 12px 16px; outline: none; transition: border-color 0.15s;
+    }
+    .search-bar input:focus { border-color: #7c6a52; }
+    .search-bar input::placeholder { color: #bbb4aa; }
+    .btn {
+      padding: 12px 24px; font-family: 'Instrument Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 600; color: #f5f2ed; background: #1a1a18;
+      border: none; border-radius: 8px; cursor: pointer; transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: #2e2e2a; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Loading / Error ── */
+    .spin { width: 22px; height: 22px; border: 2px solid #e0d9d0; border-top-color: #7c6a52; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 64px auto; }
+    .err { font-size: 0.82rem; color: #a04040; background: #fdf0f0; border: 1px solid #f0d0d0; border-radius: 8px; padding: 12px 16px; }
+
+    /* ── Summary strip ── */
+    .summary { display: flex; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
+    .pill { font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; letter-spacing: 0.5px; }
+    .pill-total { background: #f0ece5; color: #5a5248; }
+    .pill-pos   { background: #edfaf3; color: #2a7a50; }
+    .pill-neg   { background: #fdf0f0; color: #a04040; }
+    .pill-neu   { background: #eef5ff; color: #4a7fc1; }
+
+    /* ── Grid ── */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .grid-full { grid-column: 1 / -1; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff; border: 1.5px solid #e0d9d0; border-radius: 14px;
+      padding: 28px; animation: up 0.4s ease both;
+    }
+    .card-title {
+      font-size: 0.68rem; font-weight: 600; letter-spacing: 1.3px;
+      text-transform: uppercase; color: #8a8070; margin-bottom: 20px;
+    }
+
+    /* ── Word Cloud ── */
+    .cloud { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; line-height: 1; }
+    .cloud-word { font-family: 'Instrument Serif', serif; cursor: default; transition: opacity 0.15s; }
+    .cloud-word:hover { opacity: 0.7; }
+    .cloud-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+    .cloud-tab {
+      font-size: 0.72rem; font-weight: 600; padding: 4px 12px; border-radius: 5px;
+      cursor: pointer; border: 1.5px solid #e0d9d0; background: transparent;
+      color: #8a8070; transition: all 0.15s; font-family: 'Instrument Sans', sans-serif;
+    }
+    .cloud-tab.active-pos { background: #edfaf3; color: #2a7a50; border-color: #b0e8c8; }
+    .cloud-tab.active-neg { background: #fdf0f0; color: #a04040; border-color: #f0c0c0; }
+
+    @keyframes up   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="nav">
+    <a href="index.html">✈ Flights</a>
+    <a href="sentiment.html" class="active">📊 Sentiment</a>
+  </nav>
+
+  <header>
+    <h1>Airline<br/><em>sentiment.</em></h1>
+    <p class="sub">YouTube comments · VADER analysis · Live data.</p>
+  </header>
+
+  <div class="search-bar">
+    <input id="airline" type="text" placeholder="e.g. IndiGo, Air India, Vistara…" />
+    <button class="btn" id="btn" onclick="analyse()">Analyse</button>
+  </div>
+
+  <div id="output"></div>
+
+</div>
+<script>
+  const API = 'http://127.0.0.1:5000';
+
+  document.getElementById('airline').addEventListener('keydown', e => {
+    if (e.key === 'Enter') analyse();
+  });
+
+  let charts = {};
+
+  function destroyCharts() {
+    Object.values(charts).forEach(c => c.destroy());
+    charts = {};
+  }
+
+  async function analyse() {
+    const airline = document.getElementById('airline').value.trim();
+    const out = document.getElementById('output');
+    const btn = document.getElementById('btn');
+    if (!airline) { out.innerHTML = `<div class="err">Enter an airline name.</div>`; return; }
+
+    destroyCharts();
+    btn.disabled = true; btn.textContent = 'Analysing…';
+    out.innerHTML = '<div class="spin"></div>';
+
+    try {
+      const res  = await fetch(`${API}/api/sentiment?airline=${encodeURIComponent(airline)}`);
+      const data = await res.json();
+      btn.disabled = false; btn.textContent = 'Analyse';
+      if (!res.ok) { out.innerHTML = `<div class="err">${data.error || 'Something went wrong.'}</div>`; return; }
+      render(data, out);
+    } catch(err) {
+      btn.disabled = false; btn.textContent = 'Analyse';
+      out.innerHTML = `<div class="err">Error: ${err.message}. Is Flask running?</div>`;
+    }
+  }
+
+  function render(d, out) {
+    const { positive, negative, neutral } = d.pie;
+
+    out.innerHTML = `
+      <div class="summary">
+        <span class="pill pill-total">${d.total} comments analysed</span>
+        <span class="pill pill-pos">😊 ${positive} positive</span>
+        <span class="pill pill-neg">😞 ${negative} negative</span>
+        <span class="pill pill-neu">😐 ${neutral} neutral</span>
+      </div>
+
+      <div class="grid">
+        <div class="card" style="animation-delay:0.05s">
+          <div class="card-title">Sentiment Distribution</div>
+          <canvas id="pieChart" height="220"></canvas>
+        </div>
+
+        <div class="card" style="animation-delay:0.10s">
+          <div class="card-title">Top 20 Words</div>
+          <canvas id="barChart" height="220"></canvas>
+        </div>
+
+        <div class="card grid-full" style="animation-delay:0.15s">
+          <div class="card-title">Word Cloud by Sentiment</div>
+          <div class="cloud-tabs">
+            <button class="cloud-tab active-pos" id="tab-pos" onclick="showCloud('positive')">😊 Positive</button>
+            <button class="cloud-tab" id="tab-neg" onclick="showCloud('negative')">😞 Negative</button>
+          </div>
+          <div class="cloud" id="wordCloud"></div>
+        </div>
+
+        <div class="card grid-full" style="animation-delay:0.20s">
+          <div class="card-title">Post Volume by Sentiment (Monthly)</div>
+          <canvas id="lineChart" height="140"></canvas>
+        </div>
+      </div>
+    `;
+
+    // ── Pie ──────────────────────────────────────────────────────────────────
+    charts.pie = new Chart(document.getElementById('pieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Positive', 'Negative', 'Neutral'],
+        datasets: [{
+          data: [positive, negative, neutral],
+          backgroundColor: ['#2a9a5a', '#c04040', '#4a7fc1'],
+          borderColor: '#fff', borderWidth: 3,
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { family: 'Instrument Sans', size: 12 }, padding: 16 } }
+        },
+        cutout: '62%',
+      }
+    });
+
+    // ── Bar ──────────────────────────────────────────────────────────────────
+    charts.bar = new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: {
+        labels: d.top_words.map(w => w.word),
+        datasets: [{
+          data: d.top_words.map(w => w.count),
+          backgroundColor: '#7c6a52cc',
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: '#f0ece5' }, ticks: { font: { family: 'Instrument Sans', size: 11 } } },
+          y: { grid: { display: false }, ticks: { font: { family: 'Instrument Sans', size: 11 } } }
+        }
+      }
+    });
+
+    // ── Monthly ──────────────────────────────────────────────────────────────
+    charts.line = new Chart(document.getElementById('lineChart'), {
+      type: 'bar',
+      data: {
+        labels: d.monthly.map(m => m.month),
+        datasets: [
+          { label: 'Positive', data: d.monthly.map(m => m.positive), backgroundColor: '#2a9a5a99', borderRadius: 3 },
+          { label: 'Negative', data: d.monthly.map(m => m.negative), backgroundColor: '#c0404099', borderRadius: 3 },
+          { label: 'Neutral',  data: d.monthly.map(m => m.neutral),  backgroundColor: '#4a7fc199', borderRadius: 3 },
+        ]
+      },
+      options: {
+        plugins: { legend: { position: 'bottom', labels: { font: { family: 'Instrument Sans', size: 12 }, padding: 14 } } },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { family: 'Instrument Sans', size: 11 } } },
+          y: { stacked: true, grid: { color: '#f0ece5' }, ticks: { font: { family: 'Instrument Sans', size: 11 } } }
+        }
+      }
+    });
+
+    // ── Word cloud ────────────────────────────────────────────────────────────
+    window._wc = d.word_cloud;
+    showCloud('positive');
+  }
+
+  function showCloud(type) {
+    const wc = window._wc;
+    if (!wc) return;
+
+    document.getElementById('tab-pos').className = 'cloud-tab' + (type === 'positive' ? ' active-pos' : '');
+    document.getElementById('tab-neg').className = 'cloud-tab' + (type === 'negative' ? ' active-neg' : '');
+
+    const words  = wc[type] || [];
+    const max    = words[0]?.count || 1;
+    const colors = type === 'positive'
+      ? ['#2a7a50','#38a169','#4fbe82','#1a5c3c','#68d391']
+      : ['#9b2335','#c04040','#e05050','#7a1a1a','#d06060'];
+
+    document.getElementById('wordCloud').innerHTML = words.map((w, i) => {
+      const size  = 0.85 + (w.count / max) * 2.2;
+      const color = colors[i % colors.length];
+      return `<span class="cloud-word" style="font-size:${size.toFixed(2)}rem;color:${color}" title="${w.count} mentions">${w.word}</span>`;
+    }).join('');
+  }
+</script>
+</body>
+</html>

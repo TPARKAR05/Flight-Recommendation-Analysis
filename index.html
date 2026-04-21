@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flights</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    .nav { display: flex; gap: 8px; margin-bottom: 52px; animation: up 0.4s ease both; }
+    .nav a {
+    font-size: 0.78rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    padding: 7px 16px; border-radius: 6px; text-decoration: none;
+    color: #8a8070; border: 1.5px solid #e0d9d0; transition: all 0.15s;
+    }
+    .nav a:hover { border-color: #c8bfb0; color: #1a1a18; }
+    .nav a.active { background: #1a1a18; color: #f5f2ed; border-color: #1a1a18; }
+
+    body { font-family: 'Instrument Sans', sans-serif; background: #f5f2ed; color: #1a1a18; min-height: 100vh; }
+
+    .wrap { max-width: 640px; margin: 0 auto; padding: 64px 24px 80px; }
+
+    header { margin-bottom: 48px; animation: up 0.5s ease both; }
+    h1 { font-family: 'Instrument Serif', serif; font-size: 2.6rem; font-weight: 400; line-height: 1.1; letter-spacing: -0.5px; }
+    h1 em { font-style: italic; color: #7c6a52; }
+    .sub { margin-top: 8px; font-size: 0.85rem; color: #8a8070; }
+
+    .form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 48px; animation: up 0.5s 0.08s ease both; }
+    .row { display: flex; gap: 12px; }
+    .row .field { flex: 1; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    label { font-size: 0.68rem; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: #8a8070; }
+
+    input, select {
+      font-family: 'Instrument Sans', sans-serif; font-size: 0.93rem; color: #1a1a18;
+      background: #fff; border: 1.5px solid #e0d9d0; border-radius: 8px;
+      padding: 11px 14px; outline: none; transition: border-color 0.15s; width: 100%;
+    }
+    input:focus, select:focus { border-color: #7c6a52; }
+    input::placeholder { color: #bbb4aa; }
+
+    .btn {
+      margin-top: 4px; padding: 13px; font-family: 'Instrument Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 600; color: #f5f2ed; background: #1a1a18;
+      border: none; border-radius: 8px; cursor: pointer; transition: background 0.15s, transform 0.1s;
+    }
+    .btn:hover { background: #2e2e2a; }
+    .btn:active { transform: scale(0.99); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    #results { animation: up 0.4s ease both; }
+    .meta { font-size: 0.78rem; color: #8a8070; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #e0d9d0; }
+    .meta strong { color: #1a1a18; }
+
+    .card {
+      background: #fff; border: 1.5px solid #e0d9d0; border-radius: 12px;
+      padding: 22px; margin-bottom: 10px;
+      transition: border-color 0.15s, box-shadow 0.15s; animation: up 0.35s ease both;
+    }
+    .card:hover { border-color: #c8bfb0; box-shadow: 0 4px 18px rgba(0,0,0,0.07); }
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.10s; }
+    .card:nth-child(4) { animation-delay: 0.15s; }
+    .card:nth-child(5) { animation-delay: 0.20s; }
+
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .airline { font-size: 0.85rem; font-weight: 600; color: #5a5248; }
+    .flight-num { font-size: 0.78rem; color: #a09080; margin-top: 2px; }
+
+    .status { font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 4px; }
+    .status-scheduled { background: #eef5ff; color: #4a7fc1; }
+    .status-active    { background: #edfaf3; color: #2a9a5a; }
+    .status-landed    { background: #f0ece5; color: #7c6a52; }
+    .status-cancelled { background: #fdf0f0; color: #a04040; }
+
+    .route { display: flex; align-items: center; }
+    .city-code { font-family: 'Instrument Serif', serif; font-size: 1.75rem; line-height: 1; letter-spacing: -0.5px; }
+    .city-time { font-size: 0.7rem; color: #8a8070; margin-top: 3px; }
+    .city-right { text-align: right; }
+
+    .line { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 14px; }
+    .line-bar { width: 100%; display: flex; align-items: center; }
+    .line-bar::before, .line-bar::after { content: ''; flex: 1; height: 1px; background: #d4cdc4; }
+    .dot { width: 5px; height: 5px; border-radius: 50%; background: #7c6a52; flex-shrink: 0; }
+    .dur { font-size: 0.68rem; color: #a09080; }
+
+    .badges { display: flex; gap: 7px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+    .badge { font-size: 0.7rem; font-weight: 500; padding: 3px 9px; border-radius: 4px; background: #f0ece5; color: #7c6a52; }
+    .badge-delay { background: #fff4e5; color: #a06020; }
+    .rank { margin-left: auto; background: #1a1a18; color: #f5f2ed; font-weight: 600; }
+    .rank.top { background: #7c6a52; }
+
+    .empty { text-align: center; padding: 48px 0; color: #8a8070; font-size: 0.88rem; }
+    .empty p { margin-top: 6px; font-size: 0.78rem; }
+    .err { font-size: 0.82rem; color: #a04040; background: #fdf0f0; border: 1px solid #f0d0d0; border-radius: 8px; padding: 12px 16px; }
+    .spin { width: 22px; height: 22px; border: 2px solid #e0d9d0; border-top-color: #7c6a52; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 48px auto; }
+
+    @keyframes up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+   <nav class="nav">
+    <a href="index.html" class="active">✈ Flights</a>
+    <a href="sentiment.html">📊 Sentiment</a>
+  </nav>
+
+  <header>
+    <h1>Find your<br/><em>best flight.</em></h1>
+    <p class="sub">Live data · Ranked by duration &amp; delay.</p>
+  </header>
+
+  <div class="form">
+    <div class="row">
+      <div class="field">
+        <label>From</label>
+        <input id="src" type="text" placeholder="BOM" maxlength="6"/>
+      </div>
+      <div class="field">
+        <label>To</label>
+        <input id="dst" type="text" placeholder="DEL" maxlength="6"/>
+      </div>
+    </div>
+  <div class="row">
+    <div class="field">
+      <label>Depart After</label>
+      <input id="time_from" type="time" placeholder="06:00"/>
+    </div>
+    <div class="field">
+      <label>Depart Before</label>
+      <input id="time_to" type="time" placeholder="22:00"/>
+    </div>
+    <div class="field">
+      <label>Max Stops</label>
+      <select id="stops">
+        <option value="">Any</option>
+        <option value="0">Non-stop only</option>
+        <option value="1">Up to 1 stop</option>
+      </select>
+    </div>
+  </div>
+    <button class="btn" id="btn" onclick="go()">Search flights</button>
+  </div>
+
+  <div id="results"></div>
+
+</div>
+<script>
+  const API = 'http://127.0.0.1:5000';
+
+  ['src','dst'].forEach(id =>
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') go(); })
+  );
+
+  async function go() {
+    const src  = document.getElementById('src').value.trim().toUpperCase();
+    const dst  = document.getElementById('dst').value.trim().toUpperCase();
+    const maxS = document.getElementById('stops').value;
+    const out  = document.getElementById('results');
+    const btn  = document.getElementById('btn');
+
+    if (!src || !dst) {
+      out.innerHTML = `<div class="err">Enter a source and destination.</div>`;
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Searching…';
+    out.innerHTML = '<div class="spin"></div>';
+
+    const timeFrom = document.getElementById('time_from').value;
+    const timeTo   = document.getElementById('time_to').value;
+    let url = `${API}/api/flights/search?source=${src}&destination=${dst}`;
+    if (timeFrom) url += `&time_from=${timeFrom}`;
+    if (timeTo)   url += `&time_to=${timeTo}`;
+    if (maxS !== '') url += `&max_stops=${maxS}`;
+
+    console.log('Calling:', url);
+
+    try {
+      const res = await fetch(url, { mode: 'cors' });
+      console.log('Status:', res.status);
+      const data = await res.json();
+      console.log('Response:', data);
+
+      btn.disabled = false;
+      btn.textContent = 'Search flights';
+
+      if (!res.ok) {
+        out.innerHTML = `<div class="err">${data.error || 'Something went wrong.'} ${data.details || ''}</div>`;
+        return;
+      }
+      render(data.results, src, dst, out);
+
+    } catch(err) {
+      btn.disabled = false;
+      btn.textContent = 'Search flights';
+      console.error('Fetch error:', err);
+      out.innerHTML = `<div class="err">Error: ${err.message}. Is Flask running on port 5000?</div>`;
+    }
+  }
+
+  function render(flights, src, dst, out) {
+    if (!flights?.length) {
+      out.innerHTML = `<div class="empty"><strong>No flights found</strong><p>Try a different route.</p></div>`;
+      return;
+    }
+    let html = `<div class="meta"><strong>${flights.length} flight${flights.length > 1 ? 's' : ''}</strong> · ${src} → ${dst}</div>`;
+    flights.forEach(f => {
+      const statusClass = { scheduled: 'status-scheduled', active: 'status-active', landed: 'status-landed', cancelled: 'status-cancelled' }[f.status] || 'status-scheduled';
+      const delayBadge = f.delay_minutes > 0 ? `<span class="badge badge-delay">+${f.delay_minutes}m delay</span>` : '';
+      html += `<div class="card">
+        <div class="card-top">
+          <div>
+            <div class="airline">${f.airline}</div>
+            <div class="flight-num">${f.flight_number}</div>
+          </div>
+          <span class="status ${statusClass}">${f.status}</span>
+        </div>
+        <div class="route">
+          <div>
+            <div class="city-code">${f.source}</div>
+            <div class="city-time">${f.departure_time}</div>
+          </div>
+          <div class="line">
+            <div class="line-bar"><div class="dot"></div></div>
+            <div class="dur">${fmt(f.duration_minutes)}</div>
+          </div>
+          <div class="city-right">
+            <div class="city-code">${f.destination}</div>
+            <div class="city-time">${f.arrival_time}</div>
+          </div>
+        </div>
+        <div class="badges">
+          <span class="badge">${f.departure_date}</span>
+          ${f.terminal !== '—' ? `<span class="badge">Terminal ${f.terminal}</span>` : ''}
+          ${f.gate !== '—' ? `<span class="badge">Gate ${f.gate}</span>` : ''}
+          ${delayBadge}
+          <span class="badge">${f.stops === 0 ? 'Non-stop' : `${f.stops} stop${f.stops > 1 ? 's' : ''}`}</span>
+          ${f.price ? `<span class="badge">₹${f.price.toLocaleString()}</span>` : ''}
+          <span class="badge rank${f.rank <= 3 ? ' top' : ''}">#${f.rank}</span>
+        </div>
+      </div>`;
+    });
+    out.innerHTML = html;
+  }
+
+  function fmt(m) {
+    if (!m) return '—';
+    const h = Math.floor(m / 60), min = m % 60;
+    return h ? `${h}h ${min}m` : `${min}m`;
+  }
+</script>
+</body>
+</html>
