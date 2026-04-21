@@ -32,12 +32,3 @@ To run the application:
 ```bash
 python main.py
 ```
-
-## Contributing
-Contributions are welcome! Please fork the repository and submit a pull request for any changes or enhancements.
-
-## License
-This project is licensed under the MIT License.
-
-## Contact
-For any inquiries, please contact the project maintainer: TPARKAR05
